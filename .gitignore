@@ -1,5 +1,6 @@
 node_modules/
 dist/
+_site/
 coverage/
 lib/**/*.d.ts
 lib/**/*.d.ts.map
