@@ -3,11 +3,14 @@ import bpmnIoPlugin from 'eslint-plugin-bpmn-io';
 const files = {
   ignored: [
     'dist',
-    'coverage'
+    'coverage',
+    '_site'
   ],
   build: [
     'test/config/*.js',
     'tasks/**/*.mjs',
+    'webmcp-bridge/mcp-server/**/*.mjs',
+    'webmcp-bridge/build/**/*.mjs',
     '*.js',
     '*.mjs'
   ],

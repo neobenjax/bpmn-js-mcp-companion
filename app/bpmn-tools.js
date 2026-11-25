@@ -1,9 +1,6 @@
 /**
- * BPMN-JS Tool Definitions & WebMCP Registration
- * Exposes bpmn-js modeler methods as structured tools for:
- *  1. W3C WebMCP (navigator.modelContext / document.modelContext)
- *  2. In-browser inspector & automated testing (window.__bpmnWebMcp)
- *  3. Remote Agent Access (Interactive Copilot over WebSocket/MQTT)
+ * BPMN-JS WebMCP Tool Definitions
+ * Registers bpmn-js modeler capabilities as standard WebMCP tools via navigator.modelContext.
  */
 
 const EMPTY_PROCESS_XML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -58,9 +55,9 @@ function serializeElement(el) {
 }
 
 function computeLayeredLayout(nodes, flows) {
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
-  const inDegree = new Map(nodes.map((n) => [n.id, 0]));
-  const adj = new Map(nodes.map((n) => [n.id, []]));
+  const nodeMap = new Map(nodes.map((n) => [ n.id, n ]));
+  const inDegree = new Map(nodes.map((n) => [ n.id, 0 ]));
+  const adj = new Map(nodes.map((n) => [ n.id, [] ]));
 
   for (const f of flows || []) {
     if (nodeMap.has(f.from) && nodeMap.has(f.to)) {
@@ -89,6 +86,7 @@ function computeLayeredLayout(nodes, flows) {
     for (const next of adj.get(curr) || []) {
       const nextLayer = Math.max(layerOf.get(next) || 0, currLayer + 1);
       if (!layerOf.has(next) || nextLayer > layerOf.get(next)) {
+
         // guard against cycles
         if (nextLayer <= nodes.length) {
           layerOf.set(next, nextLayer);
@@ -115,7 +113,7 @@ function computeLayeredLayout(nodes, flows) {
   const centerY = 240;
   const stepY = 120;
 
-  for (const [layerIdx, layerNodes] of layers.entries()) {
+  for (const [ layerIdx, layerNodes ] of layers.entries()) {
     const count = layerNodes.length;
     layerNodes.forEach((n, idx) => {
       const yOffset = (idx - (count - 1) / 2) * stepY;
@@ -129,9 +127,8 @@ function computeLayeredLayout(nodes, flows) {
   return coords;
 }
 
-export function createBpmnTools(modeler, hooks = {}) {
+export function registerBpmnTools(modeler, hooks = {}) {
   const notifyDiagramReady = hooks.onDiagramReady || (() => {});
-  const notifyToolExecuted = hooks.onToolExecuted || (() => {});
 
   const tools = [
     {
@@ -155,7 +152,7 @@ export function createBpmnTools(modeler, hooks = {}) {
         properties: {
           xml: { type: 'string', description: 'Valid BPMN 2.0 XML document' }
         },
-        required: ['xml']
+        required: [ 'xml' ]
       },
       execute: async ({ xml }) => {
         const res = await modeler.importXML(xml);
@@ -234,7 +231,7 @@ export function createBpmnTools(modeler, hooks = {}) {
           connectFromSource: { type: 'boolean', description: 'Connect from sourceElementId with SequenceFlow (default true when sourceElementId is set)' },
           flowName: { type: 'string', description: 'Optional label for the connecting sequence flow' }
         },
-        required: ['type']
+        required: [ 'type' ]
       },
       execute: async (args) => {
         const elementFactory = modeler.get('elementFactory');
@@ -291,7 +288,7 @@ export function createBpmnTools(modeler, hooks = {}) {
           type: { type: 'string', description: 'Optional connection type (e.g. bpmn:SequenceFlow, bpmn:MessageFlow, bpmn:Association)' },
           name: { type: 'string', description: 'Optional label / condition text on the connection' }
         },
-        required: ['sourceId', 'targetId']
+        required: [ 'sourceId', 'targetId' ]
       },
       execute: async ({ sourceId, targetId, type, name }) => {
         const elementRegistry = modeler.get('elementRegistry');
@@ -324,7 +321,7 @@ export function createBpmnTools(modeler, hooks = {}) {
           width: { type: 'number', description: 'New width' },
           height: { type: 'number', description: 'New height' }
         },
-        required: ['elementId']
+        required: [ 'elementId' ]
       },
       execute: async ({ elementId, name, properties, x, y, width, height }) => {
         const elementRegistry = modeler.get('elementRegistry');
@@ -342,7 +339,7 @@ export function createBpmnTools(modeler, hooks = {}) {
           const dx = typeof x === 'number' ? x - (el.x || 0) : 0;
           const dy = typeof y === 'number' ? y - (el.y || 0) : 0;
           if (dx !== 0 || dy !== 0) {
-            modeling.moveElements([el], { x: dx, y: dy });
+            modeling.moveElements([ el ], { x: dx, y: dy });
           }
         }
         if (typeof width === 'number' || typeof height === 'number') {
@@ -369,7 +366,7 @@ export function createBpmnTools(modeler, hooks = {}) {
             description: 'Array of element IDs to remove'
           }
         },
-        required: ['elementIds']
+        required: [ 'elementIds' ]
       },
       execute: async ({ elementIds }) => {
         const elementRegistry = modeler.get('elementRegistry');
@@ -394,7 +391,7 @@ export function createBpmnTools(modeler, hooks = {}) {
           elementId: { type: 'string', description: 'Element ID to replace' },
           newType: { type: 'string', description: 'Target BPMN type (e.g. bpmn:ServiceTask, bpmn:ParallelGateway)' }
         },
-        required: ['elementId', 'newType']
+        required: [ 'elementId', 'newType' ]
       },
       execute: async ({ elementId, newType }) => {
         const elementRegistry = modeler.get('elementRegistry');
@@ -464,7 +461,7 @@ export function createBpmnTools(modeler, hooks = {}) {
                 x: { type: 'number' },
                 y: { type: 'number' }
               },
-              required: ['id', 'type']
+              required: [ 'id', 'type' ]
             }
           },
           flows: {
@@ -477,11 +474,11 @@ export function createBpmnTools(modeler, hooks = {}) {
                 to: { type: 'string' },
                 name: { type: 'string' }
               },
-              required: ['from', 'to']
+              required: [ 'from', 'to' ]
             }
           }
         },
-        required: ['nodes']
+        required: [ 'nodes' ]
       },
       execute: async ({ clearExisting = true, nodes = [], flows = [] }) => {
         if (clearExisting) {
@@ -536,84 +533,11 @@ export function createBpmnTools(modeler, hooks = {}) {
     }
   ];
 
-  // Wrap execute to emit tool execution logs
-  const wrappedTools = tools.map((tool) => ({
-    ...tool,
-    execute: async (args = {}) => {
-      const start = performance.now();
-      try {
-        const result = await tool.execute(args);
-        notifyToolExecuted({
-          name: tool.name,
-          args,
-          result,
-          durationMs: Math.round(performance.now() - start),
-          ok: true
-        });
-        return result;
-      } catch (err) {
-        notifyToolExecuted({
-          name: tool.name,
-          args,
-          error: err.message || String(err),
-          durationMs: Math.round(performance.now() - start),
-          ok: false
-        });
-        throw err;
-      }
-    }
-  }));
-
-  const toolMap = new Map(wrappedTools.map((t) => [t.name, t]));
-
-  // Register with W3C WebMCP (navigator.modelContext and/or document.modelContext)
-  const webMcpTargets = [];
   if (typeof navigator !== 'undefined' && navigator.modelContext?.registerTool) {
-    webMcpTargets.push({ label: 'navigator.modelContext', ctx: navigator.modelContext });
-  }
-  if (typeof document !== 'undefined' && document.modelContext?.registerTool) {
-    webMcpTargets.push({ label: 'document.modelContext', ctx: document.modelContext });
-  }
-
-  const registeredTargets = [];
-  for (const target of webMcpTargets) {
-    try {
-      for (const tool of wrappedTools) {
-        target.ctx.registerTool({
-          name: tool.name,
-          description: tool.description,
-          inputSchema: tool.inputSchema,
-          ...(tool.annotations ? { annotations: tool.annotations } : {}),
-          execute: tool.execute
-        });
-      }
-      registeredTargets.push(target.label);
-    } catch (err) {
-      console.warn(`[WebMCP] Failed registering on ${target.label}:`, err);
+    for (const tool of tools) {
+      navigator.modelContext.registerTool(tool);
     }
   }
 
-  const registryApi = {
-    nativeTargets: registeredTargets,
-    listTools: () => wrappedTools.map(({ name, description, inputSchema, annotations }) => ({
-      name,
-      description,
-      inputSchema,
-      annotations
-    })),
-    executeTool: async (name, args = {}) => {
-      const tool = toolMap.get(name);
-      if (!tool) {
-        throw new Error(`Unknown BPMN tool: ${name}`);
-      }
-      const parsedArgs = typeof args === 'string' ? JSON.parse(args || '{}') : args;
-      return tool.execute(parsedArgs);
-    }
-  };
-
-  if (typeof window !== 'undefined') {
-    window.__bpmnWebMcp = registryApi;
-  }
-
-  return registryApi;
+  return tools;
 }

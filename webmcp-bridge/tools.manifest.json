@@ -1,0 +1,321 @@
+{
+  "generatedAt": "2026-11-25T22:43:13.242Z",
+  "source": "app/bpmn-tools.js",
+  "tools": [
+    {
+      "name": "bpmn_create_diagram",
+      "description": "Create a new BPMN 2.0 diagram with a single StartEvent, replacing the current canvas.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "bpmn_import_xml",
+      "description": "Import a complete BPMN 2.0 XML string into the modeler.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "xml": {
+            "type": "string",
+            "description": "Valid BPMN 2.0 XML document"
+          }
+        },
+        "required": [
+          "xml"
+        ]
+      }
+    },
+    {
+      "name": "bpmn_export_xml",
+      "description": "Export the current BPMN 2.0 diagram as formatted XML.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "boolean",
+            "description": "Pretty-print XML (default true)"
+          }
+        }
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "bpmn_export_svg",
+      "description": "Export the current BPMN 2.0 diagram as an SVG string.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "bpmn_get_diagram_summary",
+      "description": "Get a structured JSON summary of all shapes, connections, labels, and bounds currently in the BPMN diagram.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      },
+      "annotations": {
+        "readOnlyHint": true
+      }
+    },
+    {
+      "name": "bpmn_add_element",
+      "description": "Add a BPMN element (e.g. bpmn:Task, bpmn:UserTask, bpmn:ServiceTask, bpmn:ExclusiveGateway, bpmn:ParallelGateway, bpmn:StartEvent, bpmn:EndEvent) to the diagram. Can auto-place and connect from sourceElementId.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "BPMN element type (e.g. bpmn:UserTask, bpmn:ExclusiveGateway, bpmn:EndEvent)"
+          },
+          "id": {
+            "type": "string",
+            "description": "Optional custom element ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Label / name for the element"
+          },
+          "x": {
+            "type": "number",
+            "description": "X coordinate (center)"
+          },
+          "y": {
+            "type": "number",
+            "description": "Y coordinate (center)"
+          },
+          "parentId": {
+            "type": "string",
+            "description": "Optional parent container ID (defaults to root process/plane)"
+          },
+          "sourceElementId": {
+            "type": "string",
+            "description": "Optional existing element ID to auto-place after and connect from"
+          },
+          "connectFromSource": {
+            "type": "boolean",
+            "description": "Connect from sourceElementId with SequenceFlow (default true when sourceElementId is set)"
+          },
+          "flowName": {
+            "type": "string",
+            "description": "Optional label for the connecting sequence flow"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      }
+    },
+    {
+      "name": "bpmn_connect_elements",
+      "description": "Connect two existing BPMN elements with a SequenceFlow, MessageFlow, or Association.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string",
+            "description": "Source element ID"
+          },
+          "targetId": {
+            "type": "string",
+            "description": "Target element ID"
+          },
+          "type": {
+            "type": "string",
+            "description": "Optional connection type (e.g. bpmn:SequenceFlow, bpmn:MessageFlow, bpmn:Association)"
+          },
+          "name": {
+            "type": "string",
+            "description": "Optional label / condition text on the connection"
+          }
+        },
+        "required": [
+          "sourceId",
+          "targetId"
+        ]
+      }
+    },
+    {
+      "name": "bpmn_update_element",
+      "description": "Update an element label, businessObject properties, position (dx/dy or x/y), or dimensions.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "elementId": {
+            "type": "string",
+            "description": "ID of the element to update"
+          },
+          "name": {
+            "type": "string",
+            "description": "New label/name"
+          },
+          "properties": {
+            "type": "object",
+            "description": "Key-value properties to set on the BPMN businessObject"
+          },
+          "x": {
+            "type": "number",
+            "description": "New top-left X coordinate"
+          },
+          "y": {
+            "type": "number",
+            "description": "New top-left Y coordinate"
+          },
+          "width": {
+            "type": "number",
+            "description": "New width"
+          },
+          "height": {
+            "type": "number",
+            "description": "New height"
+          }
+        },
+        "required": [
+          "elementId"
+        ]
+      }
+    },
+    {
+      "name": "bpmn_delete_elements",
+      "description": "Delete one or more BPMN elements by their IDs.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "elementIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of element IDs to remove"
+          }
+        },
+        "required": [
+          "elementIds"
+        ]
+      }
+    },
+    {
+      "name": "bpmn_replace_element",
+      "description": "Morph/replace an existing element with a different BPMN type (e.g. bpmn:Task -> bpmn:UserTask).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "elementId": {
+            "type": "string",
+            "description": "Element ID to replace"
+          },
+          "newType": {
+            "type": "string",
+            "description": "Target BPMN type (e.g. bpmn:ServiceTask, bpmn:ParallelGateway)"
+          }
+        },
+        "required": [
+          "elementId",
+          "newType"
+        ]
+      }
+    },
+    {
+      "name": "bpmn_undo",
+      "description": "Undo the last modeling action in the BPMN editor.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "bpmn_redo",
+      "description": "Redo the last undone modeling action in the BPMN editor.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "bpmn_zoom_fit",
+      "description": "Fit the BPMN diagram to the viewport or set a specific zoom level.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "string",
+            "description": "Zoom level: \"fit-viewport\" (default) or numeric string like \"1.0\""
+          }
+        }
+      }
+    },
+    {
+      "name": "bpmn_build_process",
+      "description": "Build a complete BPMN process from a list of nodes and flows with automatic left-to-right layout.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "clearExisting": {
+            "type": "boolean",
+            "description": "Clear existing diagram before building (default true)"
+          },
+          "nodes": {
+            "type": "array",
+            "description": "List of BPMN nodes to create",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "e.g. bpmn:StartEvent, bpmn:UserTask, bpmn:ServiceTask, bpmn:ExclusiveGateway, bpmn:EndEvent"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "id",
+                "type"
+              ]
+            }
+          },
+          "flows": {
+            "type": "array",
+            "description": "Sequence flows connecting nodes by their IDs",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "from",
+                "to"
+              ]
+            }
+          }
+        },
+        "required": [
+          "nodes"
+        ]
+      }
+    }
+  ]
+}
