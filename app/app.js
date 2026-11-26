@@ -1,5 +1,5 @@
-import { createBpmnTools } from './bpmn-tools.js';
-import { RemoteAgentSession } from './remote-agent.js';
+import { mountWebMcpBridge } from './webmcp-bridge/browser/index.js';
+import { registerBpmnTools } from './bpmn-tools.js';
 import { SAMPLE_DIAGRAM_XML } from './sample-diagram.js';
 
 const BpmnModeler = window.BpmnJS;
@@ -13,29 +13,10 @@ const warningsBanner = document.getElementById('js-warnings-banner');
 const downloadLink = document.getElementById('js-download-diagram');
 const downloadSvgLink = document.getElementById('js-download-svg');
 
-const webmcpBtn = document.getElementById('js-webmcp-btn');
-const webmcpDrawer = document.getElementById('js-webmcp-drawer');
-const webmcpClose = document.getElementById('js-webmcp-close');
-const webmcpNativeStatus = document.getElementById('js-webmcp-native-status');
-const webmcpToolsList = document.getElementById('js-webmcp-tools-list');
-
-const copilotBtn = document.getElementById('js-copilot-btn');
-const copilotDot = document.getElementById('js-copilot-dot');
-const copilotLabel = document.getElementById('js-copilot-label');
-const copilotDrawer = document.getElementById('js-copilot-drawer');
-const copilotClose = document.getElementById('js-copilot-close');
-const copilotToggle = document.getElementById('js-copilot-toggle');
-const relayUrlInput = document.getElementById('js-relay-url');
-const sessionPanel = document.getElementById('js-session-panel');
-const sessionIdEl = document.getElementById('js-session-id');
-const sessionStatusEl = document.getElementById('js-session-status');
-const activityLogEl = document.getElementById('js-activity-log');
-
 const shortcutsModal = document.getElementById('js-shortcuts-modal');
 
 const modeler = new BpmnModeler({
-  container: canvasEl,
-  keyboard: { bindTo: window }
+  container: canvasEl
 });
 
 window.__bpmnModeler = modeler;
@@ -92,11 +73,11 @@ async function updateDownloadLinks() {
   try {
     const { xml } = await modeler.saveXML({ format: true });
     downloadLink.href = 'data:application/bpmn20-xml;charset=UTF-8,' + encodeURIComponent(xml);
-  } catch {}
+  } catch { /* ignore */ }
   try {
     const { svg } = await modeler.saveSVG();
     downloadSvgLink.href = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
-  } catch {}
+  } catch { /* ignore */ }
 }
 
 function debounce(fn, ms) {
@@ -181,147 +162,12 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// WebMCP Tools Registration
-function appendActivity(source, message) {
-  const item = document.createElement('div');
-  item.className = `activity-item ${source}`;
-  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  item.textContent = `[${time}] ${message}`;
-  activityLogEl.prepend(item);
-  while (activityLogEl.children.length > 40) {
-    activityLogEl.removeChild(activityLogEl.lastChild);
-  }
-}
+// Mount generic WebMCP Bridge & register BPMN tools
+mountWebMcpBridge();
 
-const toolRegistry = createBpmnTools(modeler, {
+registerBpmnTools(modeler, {
   onDiagramReady: () => {
     setDiagramActive();
     updateDownloadLinks();
-  },
-  onToolExecuted: (ev) => {
-    if (ev.ok) {
-      appendActivity('agent', `Tool ${ev.name} (${ev.durationMs}ms)`);
-    } else {
-      appendActivity('error', `Tool ${ev.name} failed: ${ev.error}`);
-    }
   }
-});
-
-// Populate WebMCP Inspector
-const nativeTargets = toolRegistry.nativeTargets;
-webmcpNativeStatus.textContent = nativeTargets.length > 0
-  ? `Active (${nativeTargets.join(', ')})`
-  : 'Polyfill/Bridge active (browser flag not enabled)';
-
-document.getElementById('js-webmcp-label').textContent = `WebMCP (${toolRegistry.listTools().length} tools)`;
-
-for (const tool of toolRegistry.listTools()) {
-  const el = document.createElement('div');
-  el.className = 'tool-item';
-  el.innerHTML = `
-    <div class="tool-item-header">
-      <span>${tool.name}</span>
-      <span style="font-size:10px;color:#6b7280;">${tool.annotations?.readOnlyHint ? 'READ' : 'WRITE'}</span>
-    </div>
-    <p>${tool.description}</p>
-  `;
-  webmcpToolsList.appendChild(el);
-}
-
-// Drawers toggle
-webmcpBtn.addEventListener('click', () => {
-  copilotDrawer.classList.remove('open');
-  webmcpDrawer.classList.toggle('open');
-});
-webmcpClose.addEventListener('click', () => webmcpDrawer.classList.remove('open'));
-
-copilotBtn.addEventListener('click', () => {
-  webmcpDrawer.classList.remove('open');
-  copilotDrawer.classList.toggle('open');
-});
-copilotClose.addEventListener('click', () => copilotDrawer.classList.remove('open'));
-
-// Remote Agent Access (Interactive Copilot)
-const remoteSession = new RemoteAgentSession({
-  modeler,
-  toolRegistry,
-  onStatus: (status) => {
-    copilotDot.className = 'status-dot';
-    if (status.state === 'off') {
-      copilotBtn.classList.remove('active');
-      copilotLabel.textContent = 'Remote Agent: Off';
-      copilotToggle.textContent = 'Enable Remote Agent Access';
-      copilotToggle.classList.add('btn-primary');
-      sessionPanel.classList.add('hidden');
-    } else if (status.state === 'connecting') {
-      copilotDot.classList.add('waiting');
-      copilotLabel.textContent = 'Connecting...';
-      copilotToggle.disabled = true;
-    } else if (status.state === 'waiting') {
-      copilotToggle.disabled = false;
-      copilotBtn.classList.add('active');
-      copilotDot.classList.add('waiting');
-      copilotLabel.textContent = `Session: ${status.sessionId}`;
-      copilotToggle.textContent = 'Disable Remote Agent Access';
-      copilotToggle.classList.remove('btn-primary');
-      sessionPanel.classList.remove('hidden');
-      sessionIdEl.textContent = status.sessionId;
-      sessionStatusEl.textContent = `Waiting for agent on ${status.brokerUrl}...`;
-    } else if (status.state === 'connected') {
-      copilotBtn.classList.add('active');
-      copilotDot.classList.add('connected');
-      copilotLabel.textContent = `Connected: ${status.sessionId}`;
-      sessionStatusEl.textContent = `${status.agentName || 'AI Agent'} connected & syncing live!`;
-    } else if (status.state === 'error' || status.state === 'disconnected') {
-      copilotToggle.disabled = false;
-      copilotDot.classList.add('error');
-      copilotLabel.textContent = 'Remote Agent: Error';
-      sessionStatusEl.textContent = status.error || 'Disconnected from relay.';
-    }
-  },
-  onActivity: ({ source, message }) => {
-    appendActivity(source, message);
-  }
-});
-
-copilotToggle.addEventListener('click', async () => {
-  if (remoteSession.active) {
-    remoteSession.disable();
-  } else {
-    try {
-      await remoteSession.enable(relayUrlInput.value);
-    } catch (err) {
-      alert(`Could not enable remote agent access: ${err.message}`);
-    }
-  }
-});
-
-function copyText(text, btn) {
-  navigator.clipboard.writeText(text).then(() => {
-    const orig = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = orig; }, 1500);
-  });
-}
-
-document.getElementById('js-copy-session').addEventListener('click', (e) => {
-  copyText(sessionIdEl.textContent, e.currentTarget);
-});
-
-document.getElementById('js-copy-prompt').addEventListener('click', (e) => {
-  const sid = sessionIdEl.textContent;
-  const prompt = `Connect to my live BPMN diagram session "${sid}" using the bpmn-mcp-companion tools (get_diagram_summary / build_process / add_element / connect_elements / update_element / delete_elements / export_xml) and help me edit it.`;
-  copyText(prompt, e.currentTarget);
-});
-
-document.getElementById('js-copy-mcp-config').addEventListener('click', (e) => {
-  const config = JSON.stringify({
-    mcpServers: {
-      'bpmn-js-companion': {
-        command: 'node',
-        args: ['mcp-server/index.mjs']
-      }
-    }
-  }, null, 2);
-  copyText(config, e.currentTarget);
 });
