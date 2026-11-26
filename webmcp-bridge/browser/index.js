@@ -22,7 +22,7 @@ function generatePairingToken() {
  */
 export function mountWebMcpBridge(options = {}) {
   const defaultWsUrl = options.wsUrl || DEFAULT_WS_URL;
-  const manifestPath = options.manifestPath || 'webmcp-bridge/tools.manifest.json';
+  const siteBaseUrl = options.siteBaseUrl || (typeof window !== 'undefined' ? new URL('./', window.location.href).href : '');
 
   installWebMcpPolyfill();
 
@@ -34,6 +34,7 @@ export function mountWebMcpBridge(options = {}) {
 
   const widget = createBridgeWidget({
     defaultWsUrl,
+    siteBaseUrl,
     onToggle: (url) => {
       if (active) {
         disable();
@@ -41,14 +42,11 @@ export function mountWebMcpBridge(options = {}) {
         enable(url);
       }
     },
-    onCopyConfig: (tok) => JSON.stringify({
+    onCopyConfig: () => JSON.stringify({
       mcpServers: {
         'webmcp-bridge': {
           command: 'node',
-          args: [ 'webmcp-bridge/mcp-server/index.mjs', '--manifest', manifestPath ],
-          env: {
-            WEBMCP_TOKEN: tok
-          }
+          args: [ '<HOME>/.webmcp-bridge/index.mjs' ]
         }
       }
     }, null, 2)
@@ -154,7 +152,7 @@ export function mountWebMcpBridge(options = {}) {
   function scheduleReconnect() {
     clearReconnect();
     if (!active) return;
-    reconnectTimer = setTimeout(connectSocket, 2500);
+    reconnectTimer = setTimeout(connectSocket, 1000);
   }
 
   function enable(url = defaultWsUrl) {
