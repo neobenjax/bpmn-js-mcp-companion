@@ -155,7 +155,7 @@ const WIDGET_STYLES = `
   .hidden { display: none !important; }
 `;
 
-export function createBridgeWidget({ defaultWsUrl, onToggle, onCopyConfig }) {
+export function createBridgeWidget({ defaultWsUrl, siteBaseUrl, onToggle, onCopyConfig }) {
   const host = document.createElement('div');
   host.setAttribute('data-webmcp-bridge', '');
   const shadow = host.attachShadow({ mode: 'open' });
@@ -196,8 +196,11 @@ export function createBridgeWidget({ defaultWsUrl, onToggle, onCopyConfig }) {
       </div>
       <div class="drawer-body">
         <div class="card">
-          <p style="margin:0 0 10px;font-size:12px;color:#374151;">
-            Connect this live browser session to your local AI Agent Harness over a private <code>127.0.0.1</code> WebSocket. Your data never leaves your machine.
+          <p style="margin:0 0 8px;font-size:12px;color:#374151;">
+            Connect this live browser session to your local AI Agent Harness over a private <code>127.0.0.1</code> WebSocket. Your diagrams never leave your machine.
+          </p>
+          <p style="margin:0 0 10px;font-size:11.5px;color:#4b5563;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:7px 9px;">
+            <strong>Security note:</strong> If your agent is not configured yet, it will ask your permission before downloading the 2 zero-dependency bridge scripts from this site&apos;s origin and verifying their SHA-256 checksums.
           </p>
           <button type="button" class="btn btn-primary" id="btn-toggle" style="width:100%;">
             Enable Agent Bridge
@@ -275,7 +278,17 @@ export function createBridgeWidget({ defaultWsUrl, onToggle, onCopyConfig }) {
 
   el('btn-copy-prompt').addEventListener('click', (e) => {
     const token = el('txt-token').textContent;
-    const prompt = `Pair with my live browser session using webmcp_pair(token="${token}") and help me edit it using the available WebMCP tools.`;
+    const bridgeBase = `${siteBaseUrl}webmcp-bridge/mcp-server`;
+    const prompt = [
+      `Connect to my live browser session using WebMCP Bridge (pairing token: "${token}").`,
+      '1. If the `webmcp_pair` MCP tool is already available, call `webmcp_pair(token="' + token + '")` and then help me edit my diagram.',
+      '2. Otherwise, BEFORE downloading or running anything, explain to me and ask my permission for a one-time setup to:',
+      `   - Download the 2 zero-dependency Node.js bridge files (${bridgeBase}/index.mjs and ${bridgeBase}/ws-server.mjs) plus ${bridgeBase}/checksums.json into ~/.webmcp-bridge/`,
+      '   - Verify their SHA-256 checksums match checksums.json before executing.',
+      '3. Once I approve and verify, use the CLI immediately in this session without requiring an IDE restart:',
+      `   - List tools: node ~/.webmcp-bridge/index.mjs --token "${token}" --list-tools`,
+      `   - Call tool:  node ~/.webmcp-bridge/index.mjs --token "${token}" --call <toolName> --args '<json>'`
+    ].join('\n');
     copyWithFeedback(prompt, e.currentTarget);
   });
 
